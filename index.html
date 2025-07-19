@@ -334,8 +334,8 @@
       // Show loading spinner and clear content
       document.getElementById('loadingSpinner').style.display = 'block';
       document.getElementById('price').innerText = 'Loading...';
-      document.getElementById('metrics').innerHTML = 'Loading...'; // Reset content for basic metrics
-      document.getElementById('analysis').innerHTML = 'Loading...'; // Reset content for live analysis
+      document.getElementById('metrics').innerHTML = 'Loading...';
+      document.getElementById('analysis').innerHTML = 'Loading...';
       document.getElementById('advancedMetricsContent').innerHTML = 'Loading...';
       document.getElementById('advice').innerHTML = 'Loading advice...';
 
@@ -349,7 +349,7 @@
       // Hide loading spinner
       document.getElementById('loadingSpinner').style.display = 'none';
 
-      const prices = data.prices;
+      const prices = data.prices; // Array of [timestamp, price] pairs
       const timeLabels = prices.map(p => new Date(p[0]).toLocaleTimeString());
       const priceValues = prices.map(p => p[1]);
       const currentPrice = priceValues[priceValues.length - 1];
@@ -357,9 +357,22 @@
       // Update price display
       document.getElementById('price').innerText = `💰 Current Price: $${currentPrice.toFixed(2)}`;
 
+      // ******* FIX START: Calculate missing variables *******
+
+      // 24h High and Low
+      const high24h = Math.max(...priceValues);
+      const low24h = Math.min(...priceValues);
+
+      // 20-period Simple Moving Average (SMA) for Basic Metrics
+      const ma20 = priceValues.slice(-20).reduce((a, b) => a + b, 0) / 20;
+
       // For ATR approximation, use current price values for close, and derive high/low
+      // (These were already defined, but ensuring they are here for context)
       const approximatedHighs = priceValues.map(p => p * 1.005);
       const approximatedLows = priceValues.map(p => p * 0.995);
+
+      // ******* FIX END: Calculate missing variables *******
+
 
       // Calculate MACD
       const fastPeriod = 12;
@@ -371,18 +384,18 @@
 
       const macdLine = fastEMA.length >= slowPeriod ? fastEMA.slice(slowPeriod - 1).map((f, i) => f - slowEMA[slowPeriod - 1 + i]) : [NaN];
       const signalLine = macdLine.length >= signalPeriod ? calculateEMA(macdLine, signalPeriod) : [NaN];
-      const macdHistogram = macdLine.length >= signalPeriod ? macdLine.slice(signalLine.length -1).map((m, i) => m - signalLine[i]) : [NaN]; // Fixed indexing here
+      const macdHistogram = macdLine.length >= signalPeriod ? macdLine.slice(signalLine.length -1).map((m, i) => m - signalLine[i]) : [NaN];
 
       const latestMACD = macdLine[macdLine.length - 1];
       const latestSignal = signalLine[signalLine.length - 1];
-      const latestHistogram = macdHistogram[macdHistogram.length - 1]; // Use macdHistogram here
+      const latestHistogram = macdHistogram[macdHistogram.length - 1];
 
 
       // Calculate Bollinger Bands
       const bbPeriod = 20;
       const bbMultiplier = 2;
 
-      const sma20 = priceValues.slice(-bbPeriod).reduce((a, b) => a + b, 0) / bbPeriod;
+      // The sma20 for BBs is already calculated above as `ma20`
       const stdDev20 = calculateStandardDeviation(priceValues, bbPeriod);
 
       const upperBand = sma20 + (stdDev20 * bbMultiplier);
