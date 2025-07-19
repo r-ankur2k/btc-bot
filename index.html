@@ -357,22 +357,15 @@
       // Update price display
       document.getElementById('price').innerText = `💰 Current Price: $${currentPrice.toFixed(2)}`;
 
-      // ******* FIX START: Calculate missing variables *******
-
-      // 24h High and Low
+      // Calculate missing variables
       const high24h = Math.max(...priceValues);
       const low24h = Math.min(...priceValues);
 
       // 20-period Simple Moving Average (SMA) for Basic Metrics
       const ma20 = priceValues.slice(-20).reduce((a, b) => a + b, 0) / 20;
 
-      // For ATR approximation, use current price values for close, and derive high/low
-      // (These were already defined, but ensuring they are here for context)
       const approximatedHighs = priceValues.map(p => p * 1.005);
       const approximatedLows = priceValues.map(p => p * 0.995);
-
-      // ******* FIX END: Calculate missing variables *******
-
 
       // Calculate MACD
       const fastPeriod = 12;
@@ -384,7 +377,9 @@
 
       const macdLine = fastEMA.length >= slowPeriod ? fastEMA.slice(slowPeriod - 1).map((f, i) => f - slowEMA[slowPeriod - 1 + i]) : [NaN];
       const signalLine = macdLine.length >= signalPeriod ? calculateEMA(macdLine, signalPeriod) : [NaN];
-      const macdHistogram = macdLine.length >= signalPeriod ? macdLine.slice(signalLine.length -1).map((m, i) => m - signalLine[i]) : [NaN];
+
+      // **** FIX HERE: Corrected the macdHistogram calculation ****
+      const macdHistogram = macdLine.length >= signalLine.length ? macdLine.slice(signalLine.length - 1).map((m, i) => m - signalLine[i]) : [NaN];
 
       const latestMACD = macdLine[macdLine.length - 1];
       const latestSignal = signalLine[signalLine.length - 1];
