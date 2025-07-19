@@ -3,133 +3,231 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Crypto Bot</title>
+  <title>Enterprise Crypto Bot</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
   <style>
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #0d1117;
-      color: #fff;
+      font-family: 'Roboto', Arial, sans-serif; /* Use Roboto for Material Design feel */
+      margin: 0; /* Remove default margin */
+      background: #0d1117; /* Dark background */
+      color: #e0e0e0; /* Light gray text */
     }
-    select, button {
-      padding: 8px;
-      font-size: 1em;
-      margin: 10px 5px 10px 0; /* Adjusted margin */
-      border-radius: 5px;
-      border: 1px solid #30363d;
-      background-color: #21262d;
-      color: #fff;
-      cursor: pointer;
+
+    .mdl-layout__header, .mdl-layout__drawer, .mdl-layout__content {
+        background-color: #0d1117; /* Keep consistent dark background */
+        color: #e0e0e0;
     }
-    select:focus, button:focus {
-      outline: none;
-      border-color: #007bff;
+
+    .mdl-card {
+        background-color: #161b22; /* Darker card background */
+        color: #e0e0e0;
+        box-shadow: 0 2px 2px 0 rgba(0,0,0,.14),0 3px 1px -2px rgba(0,0,0,.2),0 1px 5px 0 rgba(0,0,0,.12); /* Standard material shadow */
     }
-    button:hover {
-      background-color: #30363d;
+
+    .mdl-card__title {
+        color: #fff; /* Card title text color */
+        padding-bottom: 0; /* Adjust padding */
     }
-    #chart-container {
-      max-width: 800px;
-      margin: 20px auto;
+    .mdl-card__supporting-text {
+        color: #c0c0c0;
+        padding-top: 8px; /* Adjust padding */
     }
-    canvas {
-      background: #161b22;
-      border-radius: 10px;
-      padding: 10px;
+
+    .mdl-button--colored {
+        background-color: #007bff; /* Primary button color */
+        color: white;
     }
-    #price, #advice, #analysis, #metrics {
-      margin-top: 15px;
-      font-size: 1.1em;
-      background-color: #161b22;
-      padding: 10px 15px;
-      border-radius: 8px;
-      border: 1px solid #30363d;
+    .mdl-button--colored:hover {
+        background-color: #0056b3;
     }
+
+    .mdl-textfield__input {
+        color: #e0e0e0;
+        border-bottom: 1px solid #30363d; /* Darker border for input */
+    }
+    .mdl-textfield__label {
+        color: #888; /* Lighter label text */
+    }
+    .mdl-textfield__label:after {
+        background-color: #007bff; /* Underline focus color */
+    }
+
     #price {
-        font-size: 1.5em;
+        font-size: 2em; /* Larger price */
         font-weight: bold;
         text-align: center;
-        color: #00ff99;
+        color: #00ff99; /* Green for current price */
+        margin-bottom: 16px;
     }
-    #metrics, #analysis {
-        margin-top: 10px;
-        line-height: 1.6;
-    }
-    #metrics span, #analysis span {
+
+    #metrics span, #analysis span, #advancedMetricsContent span {
         display: inline-block;
         margin-right: 15px;
-        padding: 3px 8px;
+        margin-bottom: 8px; /* Spacing for multiline metrics */
+        padding: 5px 10px;
         border-radius: 4px;
         background-color: #21262d;
         border: 1px solid #30363d;
-        margin-bottom: 5px; /* Added for better spacing in multiple lines */
+        font-size: 0.95em; /* Slightly smaller for metrics */
     }
+
     #advice {
         font-weight: bold;
         text-align: center;
         padding: 15px;
-        color: #fff;
+        margin-top: 16px;
+        border-radius: 8px;
+        background-color: #1a222c; /* Slightly different background for advice */
+        border: 1px solid #30363d;
     }
+
     .bullish { color: #00ff99; }
     .bearish { color: #ff6384; }
     .neutral { color: #ffe66d; }
 
-    /* Style for the advanced metrics container */
-    #advancedMetrics {
+    /* Custom styles for loading spinner */
+    .loading-spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid #007bff; /* Blue spinner */
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
       display: none; /* Hidden by default */
-      margin-top: 10px;
-      background-color: #161b22;
-      padding: 10px 15px;
-      border-radius: 8px;
-      border: 1px solid #30363d;
     }
-    #toggleMetricsButton {
-        background-color: #007bff;
-        border-color: #007bff;
-        color: white;
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
-    #toggleMetricsButton:hover {
-        background-color: #0056b3;
-        border-color: #0056b3;
+
+    #chart-container canvas {
+        width: 100% !important; /* Ensure canvas fills container */
+        height: auto !important;
+        max-height: 400px; /* Limit chart height */
+        background: #1e252e; /* Chart background */
     }
+    .mdl-selectfield {
+      width: 100%; /* Make select full width in its cell */
+    }
+    .mdl-selectfield label {
+        color: #e0e0e0; /* Label color for select */
+    }
+    .mdl-selectfield select {
+        background-color: #21262d; /* Dark background for select input */
+        color: #e0e0e0;
+        border: 1px solid #30363d;
+        border-radius: 4px;
+        padding: 8px;
+    }
+
   </style>
 </head>
 <body>
-  <h2>Crypto Bot - Live Analysis</h2>
-  <label for="coin">Choose Coin: </label>
-  <select id="coin">
-    <option value="bitcoin">Bitcoin (BTC)</option>
-    <option value="ethereum">Ethereum (ETH)</option>
-    <option value="solana">Solana (SOL)</option>
-    <option value="cardano">Cardano (ADA)</option>
-    <option value="dogecoin">Dogecoin (DOGE)</option>
-    <option value="ripple">Ripple (XRP)</option>
-    <option value="litecoin">Litecoin (LTC)</option>
-    <option value="polkadot">Polkadot (DOT)</option>
-  </select>
-  <button onclick="fetchData()">Refresh</button>
-  <button id="toggleMetricsButton">Show Advanced Metrics</button>
+  <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+    <header class="mdl-layout__header">
+      <div class="mdl-layout__header-row">
+        <span class="mdl-layout-title">Crypto Bot - Live Analysis</span>
+      </div>
+    </header>
+    <main class="mdl-layout__content">
+      <div class="mdl-grid">
 
-  <div id="price">Loading...</div>
-  <div id="metrics"></div>
+        <div class="mdl-cell mdl-cell--12-col mdl-card mdl-shadow--2dp">
+          <div class="mdl-card__supporting-text">
+            <div class="mdl-grid">
+              <div class="mdl-cell mdl-cell--6-col mdl-cell--8-col-tablet mdl-cell--4-col-phone">
+                <div class="mdl-selectfield">
+                  <label for="coin">Choose Coin: </label>
+                  <select id="coin" class="mdl-textfield__input">
+                    <option value="bitcoin">Bitcoin (BTC)</option>
+                    <option value="ethereum">Ethereum (ETH)</option>
+                    <option value="solana">Solana (SOL)</option>
+                    <option value="cardano">Cardano (ADA)</option>
+                    <option value="dogecoin">Dogecoin (DOGE)</option>
+                    <option value="ripple">Ripple (XRP)</option>
+                    <option value="litecoin">Litecoin (LTC)</option>
+                    <option value="polkadot">Polkadot (DOT)</option>
+                    <option value="chainlink">Chainlink (LINK)</option>
+                    <option value="uniswap">Uniswap (UNI)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mdl-cell mdl-cell--6-col mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
+              <div class="mdl-cell mdl-cell--6-col mdl-cell--4-col-tablet mdl-cell--4-col-phone">
+                <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored" onclick="fetchData()">
+                  <i class="material-icons">refresh</i> Refresh
+                </button>
+                <button id="toggleMetricsButton" class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent">
+                  Show Advanced Metrics
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-  <div id="advancedMetrics">
-      <h3>Advanced Metrics</h3>
-      <div id="advancedMetricsContent"></div>
+        <div class="mdl-cell mdl-cell--12-col">
+          <div id="price">Loading...</div>
+        </div>
+
+        <div id="loadingSpinner" class="loading-spinner"></div>
+
+        <div class="mdl-cell mdl-cell--6-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-card mdl-shadow--2dp">
+          <div class="mdl-card__title">
+            <h2 class="mdl-card__title-text">Basic Metrics</h2>
+          </div>
+          <div class="mdl-card__supporting-text" id="metrics">
+            Loading...
+          </div>
+        </div>
+
+        <div class="mdl-cell mdl-cell--6-col mdl-cell--12-col-tablet mdl-cell--12-col-phone mdl-card mdl-shadow--2dp">
+          <div class="mdl-card__title">
+            <h2 class="mdl-card__title-text">Live Analysis</h2>
+          </div>
+          <div class="mdl-card__supporting-text" id="analysis">
+            Loading...
+          </div>
+        </div>
+
+        <div id="advancedMetricsCard" class="mdl-cell mdl-cell--12-col mdl-card mdl-shadow--2dp" style="display: none;">
+            <div class="mdl-card__title">
+                <h2 class="mdl-card__title-text">Advanced Metrics</h2>
+            </div>
+            <div class="mdl-card__supporting-text" id="advancedMetricsContent">
+                Loading...
+            </div>
+        </div>
+
+        <div class="mdl-cell mdl-cell--12-col mdl-card mdl-shadow--2dp">
+          <div class="mdl-card__title">
+            <h2 class="mdl-card__title-text">Price Chart (24h)</h2>
+          </div>
+          <div class="mdl-card__supporting-text" id="chart-container">
+            <canvas id="cryptoChart"></canvas>
+          </div>
+        </div>
+
+        <div class="mdl-cell mdl-cell--12-col">
+          <div id="advice">
+            Loading advice...
+          </div>
+        </div>
+
+      </div>
+    </main>
   </div>
 
-  <div id="analysis"></div>
-
-  <div id="chart-container">
-    <canvas id="cryptoChart" width="600" height="300"></canvas>
-  </div>
-
-  <div id="advice"></div>
-
+  <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
   <script>
     let chart;
 
+    // Helper functions (EMA, StdDev, RSI, Stochastic, ATR) remain the same
+    // (copy them from the previous response here)
     // Helper function to calculate EMA
     function calculateEMA(prices, period) {
         if (prices.length < period) return Array(prices.length).fill(NaN);
@@ -220,27 +318,39 @@
         }
         return atr;
     }
+    // End of helper functions
 
 
     async function fetchData() {
+      // Show loading spinner and clear content
+      document.getElementById('loadingSpinner').style.display = 'block';
+      document.getElementById('price').innerText = 'Loading...';
+      document.getElementById('metrics').innerHTML = 'Loading...';
+      document.getElementById('analysis').innerHTML = 'Loading...';
+      document.getElementById('advancedMetricsContent').innerHTML = 'Loading...';
+      document.getElementById('advice').innerHTML = 'Loading advice...';
+
+
       const coin = document.getElementById('coin').value;
       const response = await fetch(
         `https://api.coingecko.com/api/v3/coins/${coin}/market_chart?vs_currency=usd&days=1`
       );
       const data = await response.json();
 
+      // Hide loading spinner
+      document.getElementById('loadingSpinner').style.display = 'none';
+
       const prices = data.prices;
       const timeLabels = prices.map(p => new Date(p[0]).toLocaleTimeString());
       const priceValues = prices.map(p => p[1]);
       const currentPrice = priceValues[priceValues.length - 1];
 
+      // Update price display
+      document.getElementById('price').innerText = `💰 Current Price: $${currentPrice.toFixed(2)}`;
+
       // For ATR approximation, use current price values for close, and derive high/low
-      // This is a simplification; for real trading, you'd need OHLCV data.
       const approximatedHighs = priceValues.map(p => p * 1.005);
       const approximatedLows = priceValues.map(p => p * 0.995);
-
-
-      document.getElementById('price').innerText = `💰 Current Price: $${currentPrice.toFixed(2)}`;
 
       // Calculate MACD
       const fastPeriod = 12;
@@ -294,30 +404,7 @@
               fill: false,
               tension: 0.2,
               pointRadius: 0
-            },
-            // Bollinger Bands can be added to the chart, but for simplicity and decluttering,
-            // we'll keep only the price on the main chart by default.
-            // If you want to add them back to the chart, uncomment these:
-            /*
-            {
-                label: 'Upper Bollinger Band',
-                data: Array(priceValues.length - bbPeriod).fill(NaN).concat(priceValues.slice(bbPeriod).map((_, i) => sma20 + (calculateStandardDeviation(priceValues.slice(0, bbPeriod + i), bbPeriod) * bbMultiplier))),
-                borderColor: 'rgba(255, 206, 86, 0.5)',
-                borderDash: [5, 5],
-                fill: false,
-                tension: 0.2,
-                pointRadius: 0
-            },
-            {
-                label: 'Lower Bollinger Band',
-                data: Array(priceValues.length - bbPeriod).fill(NaN).concat(priceValues.slice(bbPeriod).map((_, i) => sma20 - (calculateStandardDeviation(priceValues.slice(0, bbPeriod + i), bbPeriod) * bbMultiplier))),
-                borderColor: 'rgba(255, 206, 86, 0.5)',
-                borderDash: [5, 5],
-                fill: false,
-                tension: 0.2,
-                pointRadius: 0
-            },
-            */
+            }
           ]
         },
         options: {
@@ -391,9 +478,9 @@
               advice += `<br><span class="bearish">Stochastic: %K ${latestStochK.toFixed(2)} / %D ${latestStochD.toFixed(2)} - Overbought, potential reversal.</span>`;
           } else if (latestStochK < 20 && latestStochD < 20) {
               advice += `<br><span class="bullish">Stochastic: %K ${latestStochK.toFixed(2)} / %D ${latestStochD.toFixed(2)} - Oversold, potential rebound.</span>`;
-          } else if (latestStochK > latestStochD && latestStochK < 80 && latestStochD > 20) { // Bullish cross in neutral zone
+          } else if (latestStochK > latestStochD && latestStochK < 80 && latestStochD > 20) {
               advice += `<br><span class="bullish">Stochastic: %K ${latestStochK.toFixed(2)} / %D ${latestStochD.toFixed(2)} - Bullish momentum.</span>`;
-          } else if (latestStochK < latestStochD && latestStochK > 20 && latestStochD < 80) { // Bearish cross in neutral zone
+          } else if (latestStochK < latestStochD && latestStochK > 20 && latestStochD < 80) {
               advice += `<br><span class="bearish">Stochastic: %K ${latestStochK.toFixed(2)} / %D ${latestStochD.toFixed(2)} - Bearish momentum.</span>`;
           } else {
               advice += `<br><span class="neutral">Stochastic: Signals are neutral or indecisive.</span>`;
@@ -422,7 +509,7 @@
         <span>📈 <b>Signal Line:</b> ${isNaN(latestSignal) ? 'N/A' : latestSignal.toFixed(2)}</span>
         <span>📉 <b>MACD Hist:</b> ${isNaN(latestHistogram) ? 'N/A' : latestHistogram.toFixed(2)}</span>
         <span>⬆️ <b>Upper BB:</b> $${isNaN(upperBand) ? 'N/A' : upperBand.toFixed(2)}</span>
-        <span>⬇️ <b>Lower BB:</b> $${isNaN(lowerBand) ? 'N/A' : lowerBand.toFixed(2)}</span>
+        <span>⬇️ <b>Lower BB:</b> $${lowerBand.toFixed(2)}</span>
         <span>💨 <b>ATR:</b> ${isNaN(atr) ? 'N/A' : atr.toFixed(2)}</span>
       `;
 
@@ -438,17 +525,20 @@
         <span>📊 <b>Trend:</b> <span class="${trendClass}">${trendText} (${change.toFixed(2)}%)</span></span>
         <span>🌪️ <b>Volatility:</b> <span class="${volatilityClass}">${volatilityLevel} (${volatility.toFixed(2)}%)</span></span>
       `;
+
+       // Re-register MDL components after content updates
+       componentHandler.upgradeDom();
     }
 
     // Toggle Advanced Metrics visibility
     document.getElementById('toggleMetricsButton').addEventListener('click', function() {
-        const advancedMetricsDiv = document.getElementById('advancedMetrics');
+        const advancedMetricsCard = document.getElementById('advancedMetricsCard');
         const button = document.getElementById('toggleMetricsButton');
-        if (advancedMetricsDiv.style.display === 'none' || advancedMetricsDiv.style.display === '') {
-            advancedMetricsDiv.style.display = 'block';
+        if (advancedMetricsCard.style.display === 'none' || advancedMetricsCard.style.display === '') {
+            advancedMetricsCard.style.display = 'block';
             button.textContent = 'Hide Advanced Metrics';
         } else {
-            advancedMetricsDiv.style.display = 'none';
+            advancedMetricsCard.style.display = 'none';
             button.textContent = 'Show Advanced Metrics';
         }
     });
