@@ -131,6 +131,13 @@
         border-radius: 4px;
         padding: 8px;
     }
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #888;
+      font-size: 0.9em;
+      margin-top: 20px; /* Add some space above the footer */
+    }
 
   </style>
 </head>
@@ -229,6 +236,10 @@
     </main>
   </div>
 
+  <footer style="text-align: center; padding: 20px; color: #888; font-size: 0.9em;">
+    Crypto Bot created by BetterOneYT.
+  </footer>
+
   <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
   <script>
     let chart;
@@ -323,8 +334,8 @@
       // Show loading spinner and clear content
       document.getElementById('loadingSpinner').style.display = 'block';
       document.getElementById('price').innerText = 'Loading...';
-      document.getElementById('metrics').innerHTML = 'Loading...';
-      document.getElementById('analysis').innerHTML = 'Loading...';
+      document.getElementById('metrics').innerHTML = 'Loading...'; // Reset content for basic metrics
+      document.getElementById('analysis').innerHTML = 'Loading...'; // Reset content for live analysis
       document.getElementById('advancedMetricsContent').innerHTML = 'Loading...';
       document.getElementById('advice').innerHTML = 'Loading advice...';
 
@@ -360,11 +371,12 @@
 
       const macdLine = fastEMA.length >= slowPeriod ? fastEMA.slice(slowPeriod - 1).map((f, i) => f - slowEMA[slowPeriod - 1 + i]) : [NaN];
       const signalLine = macdLine.length >= signalPeriod ? calculateEMA(macdLine, signalPeriod) : [NaN];
-      const macdHistogram = macdLine.length >= signalPeriod ? macdLine.slice(signalPeriod - 1).map((m, i) => m - signalLine[i]) : [NaN];
+      const macdHistogram = macdLine.length >= signalPeriod ? macdLine.slice(signalLine.length -1).map((m, i) => m - signalLine[i]) : [NaN]; // Fixed indexing here
 
       const latestMACD = macdLine[macdLine.length - 1];
       const latestSignal = signalLine[signalLine.length - 1];
-      const latestHistogram = macdHistogram[macdHistogram.length - 1];
+      const latestHistogram = macdHistogram[macdHistogram.length - 1]; // Use macdHistogram here
+
 
       // Calculate Bollinger Bands
       const bbPeriod = 20;
@@ -582,6 +594,8 @@
             advancedMetricsCard.style.display = 'none';
             button.textContent = 'Show Advanced Metrics';
         }
+        // Important: Upgrade DOM after showing/hiding to ensure MDL re-renders components inside
+        componentHandler.upgradeDom();
     });
 
 
