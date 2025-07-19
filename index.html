@@ -83,13 +83,6 @@
         background-color: #1a222c; /* Slightly different background for advice */
         border: 1px solid #30363d;
     }
-    /* New styles for Buy/Hold/Sell specific advice */
-    .advice-buy { color: #00ff99; } /* Bright green */
-    .advice-sell { color: #ff6384; } /* Red */
-    .advice-hold { color: #ffe66d; } /* Yellow */
-    .advice-strong-buy { color: #00cc66; font-weight: bolder; } /* Darker green, bolder */
-    .advice-strong-sell { color: #cc3366; font-weight: bolder; } /* Darker red, bolder */
-
 
     .bullish { color: #00ff99; }
     .bearish { color: #ff6384; }
@@ -233,6 +226,8 @@
   <script>
     let chart;
 
+    // Helper functions (EMA, StdDev, RSI, Stochastic, ATR) remain the same
+    // (copy them from the previous response here)
     // Helper function to calculate EMA
     function calculateEMA(prices, period) {
         if (prices.length < period) return Array(prices.length).fill(NaN);
@@ -260,6 +255,7 @@
     function calculateRSI(prices, period = 14) {
         if (prices.length < period + 1) return NaN;
         let gains = 0, losses = 0;
+        // Calculate gains and losses for the latest 'period' prices
         for (let i = prices.length - period; i < prices.length; i++) {
           let diff = prices[i] - prices[i - 1];
           if (diff >= 0) gains += diff;
@@ -276,11 +272,14 @@
         if (prices.length < periodK) return { K: NaN, D: NaN };
 
         const currentPrice = prices[prices.length - 1];
+
+        // For %K, calculate for the very last period
         const periodK_slice = prices.slice(-periodK);
         const lowestLowK = Math.min(...periodK_slice);
         const highestHighK = Math.max(...periodK_slice);
         const K = ((currentPrice - lowestLowK) / (highestHighK - lowestLowK || 0.0001)) * 100;
 
+        // For %D, we need the SMA of %K values. Calculate %K for the last 'periodD' + 'periodK' - 1 points
         const kValues = [];
         for (let i = 0; i < prices.length; i++) {
             if (i >= periodK - 1) {
@@ -310,13 +309,16 @@
 
         if (trueRanges.length < period) return NaN;
 
+        // Calculate initial ATR (SMA of first 'period' true ranges)
         let atr = trueRanges.slice(0, period).reduce((a, b) => a + b, 0) / period;
 
+        // Calculate subsequent ATRs (EMA-like smoothing)
         for (let i = period; i < trueRanges.length; i++) {
             atr = ((atr * (period - 1)) + trueRanges[i]) / period;
         }
         return atr;
     }
+    // End of helper functions
 
 
     async function fetchData() {
@@ -428,114 +430,69 @@
         }
       });
 
-      // --- Start of Advice Logic with Buy/Hold/Sell ---
-      let adviceText = '';
-      let buyScore = 0;
-      let sellScore = 0;
+      // Advice logic
+      let advice = '';
+      if (currentPrice > priceValues[0] * 1.01) advice = '<span class="bullish">📈 Price is significantly up — consider watching for breakout or profit-taking.</span>';
+      else if (currentPrice < priceValues[0] * 0.99) advice = '<span class="bearish">📉 Price is significantly down — could be a dip opportunity or further decline.</span>';
+      else advice = '<span class="neutral">⏸️ No major price move yet — market might be consolidating.</span>';
 
-      // Initial price change advice
-      const change = ((currentPrice - priceValues[0]) / priceValues[0]) * 100;
-      if (change > 1) { // More than 1% up
-          adviceText += '<span class="bullish">📈 Price is significantly up.</span>';
-          buyScore += 1;
-      } else if (change < -1) { // More than 1% down
-          adviceText += '<span class="bearish">📉 Price is significantly down.</span>';
-          sellScore += 1;
-      } else {
-          adviceText += '<span class="neutral">⏸️ No major price move yet.</span>';
-      }
-
+      // Enhanced Advice based on new indicators
       // MACD Advice
       if (!isNaN(latestMACD) && !isNaN(latestSignal)) {
           if (latestMACD > latestSignal && latestHistogram > 0) {
-              adviceText += '<br><span class="bullish">MACD: Bullish crossover, strong upward momentum.</span>';
-              buyScore += 2; // Stronger signal
+              advice += '<br><span class="bullish">MACD: Bullish crossover and positive histogram - momentum is strong.</span>';
           } else if (latestMACD < latestSignal && latestHistogram < 0) {
-              adviceText += '<br><span class="bearish">MACD: Bearish crossover, downward momentum increasing.</span>';
-              sellScore += 2; // Stronger signal
-          } else if (latestMACD > latestSignal && latestHistogram < 0) {
-            adviceText += '<br><span class="neutral">MACD: Bullish crossover, but histogram suggests weakening momentum.</span>';
-          } else if (latestMACD < latestSignal && latestHistogram > 0) {
-            adviceText += '<br><span class="neutral">MACD: Bearish crossover, but histogram suggests weakening momentum.</span>';
+              advice += '<br><span class="bearish">MACD: Bearish crossover and negative histogram - momentum is weakening.</span>';
           } else {
-              adviceText += '<br><span class="neutral">MACD: Signals are neutral or indecisive.</span>';
+              advice += '<br><span class="neutral">MACD: Signals are neutral or indecisive.</span>';
           }
       }
 
       // Bollinger Bands Advice
       if (!isNaN(upperBand) && !isNaN(lowerBand)) {
           if (currentPrice > upperBand) {
-              adviceText += '<br><span class="bearish">Bollinger Bands: Price above upper band - potentially overbought.</span>';
-              sellScore += 1;
+              advice += '<br><span class="bearish">Bollinger Bands: Price above upper band - potentially overbought.</span>';
           } else if (currentPrice < lowerBand) {
-              adviceText += '<br><span class="bullish">Bollinger Bands: Price below lower band - potentially oversold.</span>';
-              buyScore += 1;
-          } else if (upperBand - lowerBand < (sma20 * 0.02)) { // Squeeze detected
-              adviceText += '<br><span class="neutral">Bollinger Bands: Bands are squeezing - low volatility, potential for a breakout.</span>';
+              advice += '<br><span class="bullish">Bollinger Bands: Price below lower band - potentially oversold.</span>';
+          } else if (upperBand - lowerBand < (sma20 * 0.02)) {
+              advice += '<br><span class="neutral">Bollinger Bands: Bands are squeezing - low volatility, potential for a breakout.</span>';
           } else {
-              adviceText += '<br><span class="neutral">Bollinger Bands: Price within bands - market is ranging.</span>';
+              advice += '<br><span class="neutral">Bollinger Bands: Price within bands - market is ranging.</span>';
           }
       }
 
       // RSI Advice
       if (!isNaN(rsi)) {
           if (rsi > 70) {
-              adviceText += `<br><span class="bearish">RSI: ${rsi.toFixed(2)} - Overbought conditions, potential for pullback.</span>`;
-              sellScore += 1;
+              advice += `<br><span class="bearish">RSI: ${rsi.toFixed(2)} - Overbought conditions, potential for pullback.</span>`;
           } else if (rsi < 30) {
-              adviceText += `<br><span class="bullish">RSI: ${rsi.toFixed(2)} - Oversold conditions, potential for rebound.</span>`;
-              buyScore += 1;
+              advice += `<br><span class="bullish">RSI: ${rsi.toFixed(2)} - Oversold conditions, potential for rebound.</span>`;
           } else {
-              adviceText += `<br><span class="neutral">RSI: ${rsi.toFixed(2)} - Neutral territory.</span>`;
+              advice += `<br><span class="neutral">RSI: ${rsi.toFixed(2)} - Neutral territory.</span>`;
           }
       }
 
       // Stochastic Oscillator Advice
       if (!isNaN(latestStochK) && !isNaN(latestStochD)) {
-          if (latestStochK > 80 && latestStochD > 80 && latestStochK < latestStochD) { // Overbought with bearish crossover
-              adviceText += `<br><span class="bearish">Stochastic: %K ${latestStochK.toFixed(2)} / %D ${latestStochD.toFixed(2)} - Overbought, bearish cross, potential reversal.</span>`;
-              sellScore += 2;
-          } else if (latestStochK < 20 && latestStochD < 20 && latestStochK > latestStochD) { // Oversold with bullish crossover
-              adviceText += `<br><span class="bullish">Stochastic: %K ${latestStochK.toFixed(2)} / %D ${latestStochD.toFixed(2)} - Oversold, bullish cross, potential rebound.</span>`;
-              buyScore += 2;
+          if (latestStochK > 80 && latestStochD > 80) {
+              advice += `<br><span class="bearish">Stochastic: %K ${latestStochK.toFixed(2)} / %D ${latestStochD.toFixed(2)} - Overbought, potential reversal.</span>`;
+          } else if (latestStochK < 20 && latestStochD < 20) {
+              advice += `<br><span class="bullish">Stochastic: %K ${latestStochK.toFixed(2)} / %D ${latestStochD.toFixed(2)} - Oversold, potential rebound.</span>`;
           } else if (latestStochK > latestStochD && latestStochK < 80 && latestStochD > 20) {
-              adviceText += `<br><span class="bullish">Stochastic: %K ${latestStochK.toFixed(2)} / %D ${latestStochD.toFixed(2)} - Bullish momentum.</span>`;
-              buyScore += 1;
+              advice += `<br><span class="bullish">Stochastic: %K ${latestStochK.toFixed(2)} / %D ${latestStochD.toFixed(2)} - Bullish momentum.</span>`;
           } else if (latestStochK < latestStochD && latestStochK > 20 && latestStochD < 80) {
-              adviceText += `<br><span class="bearish">Stochastic: %K ${latestStochK.toFixed(2)} / %D ${latestStochD.toFixed(2)} - Bearish momentum.</span>`;
-              sellScore += 1;
+              advice += `<br><span class="bearish">Stochastic: %K ${latestStochK.toFixed(2)} / %D ${latestStochD.toFixed(2)} - Bearish momentum.</span>`;
           } else {
-              adviceText += `<br><span class="neutral">Stochastic: Signals are neutral or indecisive.</span>`;
+              advice += `<br><span class="neutral">Stochastic: Signals are neutral or indecisive.</span>`;
           }
       }
 
-      // Overall Buy/Hold/Sell Recommendation
-      let finalRecommendation = '';
-      let recommendationClass = '';
+      document.getElementById('advice').innerHTML = advice;
 
-      if (buyScore >= 3 && buyScore > sellScore + 1) { // A few strong buy signals
-          finalRecommendation = 'Strong Buy!';
-          recommendationClass = 'advice-strong-buy';
-      } else if (buyScore > sellScore) {
-          finalRecommendation = 'Consider Buying.';
-          recommendationClass = 'advice-buy';
-      } else if (sellScore >= 3 && sellScore > buyScore + 1) { // A few strong sell signals
-          finalRecommendation = 'Strong Sell!';
-          recommendationClass = 'advice-strong-sell';
-      } else if (sellScore > buyScore) {
-          finalRecommendation = 'Consider Selling.';
-          recommendationClass = 'advice-sell';
-      } else {
-          finalRecommendation = 'Hold / Neutral.';
-          recommendationClass = 'advice-hold';
-      }
-
-      document.getElementById('advice').innerHTML = `
-        <div style="font-size: 1.3em; margin-bottom: 10px;">Overall Recommendation: <span class="${recommendationClass}">${finalRecommendation}</span></div>
-        ${adviceText}
-      `;
-      // --- End of Advice Logic with Buy/Hold/Sell ---
-
+      // Basic Metrics (always visible)
+      const ma20 = priceValues.slice(-20).reduce((a, b) => a + b, 0) / 20;
+      const high24h = Math.max(...priceValues);
+      const low24h = Math.min(...priceValues);
 
       document.getElementById('metrics').innerHTML = `
         <span>🔍 <b>RSI:</b> ${isNaN(rsi) ? 'N/A' : rsi.toFixed(2)}</span>
@@ -544,6 +501,7 @@
         <span>📉 <b>24h Low:</b> $${low24h.toFixed(2)}</span>
       `;
 
+      // Advanced Metrics (hidden by default, shown by button)
       document.getElementById('advancedMetricsContent').innerHTML = `
         <span>📊 <b>Stoch %K:</b> ${isNaN(latestStochK) ? 'N/A' : latestStochK.toFixed(2)}</span>
         <span>📊 <b>Stoch %D:</b> ${isNaN(latestStochD) ? 'N/A' : latestStochD.toFixed(2)}</span>
@@ -556,6 +514,7 @@
       `;
 
       // Live analysis
+      const change = ((currentPrice - priceValues[0]) / priceValues[0]) * 100;
       const volatility = ((high24h - low24h) / currentPrice) * 100;
       const trendClass = change > 0 ? 'bullish' : change < 0 ? 'bearish' : 'neutral';
       const trendText = change > 0 ? 'Bullish' : change < 0 ? 'Bearish' : 'Neutral';
